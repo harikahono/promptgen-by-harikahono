@@ -1,24 +1,35 @@
 <script setup lang="ts">
 import { ref, computed, type Component } from 'vue';
 import { usePortfolioStore } from '@/stores/portfolio';
+import { getAllTemplates } from '@/data/templates';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
+import BaseSelect from '@/components/ui/BaseSelect.vue';
 import StepIndicator from '@/components/ui/StepIndicator.vue';
+import AnimatedCounter from '@/components/ui/AnimatedCounter.vue';
 import StepIdentitas from '@/components/wizard/StepIdentitas.vue';
 import StepLayanan from '@/components/wizard/StepLayanan.vue';
 import StepProyek from '@/components/wizard/StepProyek.vue';
 import StepDesain from '@/components/wizard/StepDesain.vue';
 import StepTarget from '@/components/wizard/StepTarget.vue';
 
+const STEP_VARIANTS = ['primary', 'secondary', 'tertiary', 'default', 'primary'] as const;
+const STEP_BG_CLASSES = ['bg-primary-container', 'bg-secondary-container', 'bg-tertiary-container', 'bg-surface', 'bg-primary-container'] as const;
+
 const store = usePortfolioStore();
 const currentStep = ref(1);
 const isGenerating = ref(false);
+const showTemplateSelect = ref(false);
 
 // Modal state
 const showModal = ref(false);
 const modalVariant = ref<'error' | 'warning' | 'info' | 'success'>('error');
 const modalMessage = ref('');
+
+// Template handling
+const templates = getAllTemplates();
+const selectedTemplateId = ref<string>('');
 
 // Step components mapping
 const stepComponents: Record<number, Component> = {
@@ -42,12 +53,18 @@ const stepTitles: Record<number, string> = {
 
 const currentTitle = computed(() => stepTitles[currentStep.value]);
 
+// Step variant mapping for color blocking
+const currentVariant = computed(() => STEP_VARIANTS[currentStep.value - 1]);
+
+const stepBgClass = (step: number): string => STEP_BG_CLASSES[step - 1];
+
+
 // Navigation logic
 const canGoNext = computed(() => currentStep.value < 5);
 const canGoPrev = computed(() => currentStep.value > 1);
 
 const canGenerate = computed(() => {
-  return currentStep.value === 5 && store.selectedTarget !== undefined;
+  return currentStep.value === 5 && store.selectedTarget !== null;
 });
 
 // Validate current step before moving forward
@@ -153,11 +170,11 @@ const generatePrompt = async () => {
   }
 
   isGenerating.value = true;
-  
+
   try {
     // Validate all data
     const isValid = store.validateAll();
-    
+
     if (!isValid) {
       modalVariant.value = 'error';
       modalMessage.value = 'Data tidak valid. Periksa kembali semua step.';
@@ -166,10 +183,10 @@ const generatePrompt = async () => {
       return;
     }
 
-    // Generate prompt
-    store.generatePrompt();
+    // Generate and cache all prompts
+    store.generateAndCacheAllPrompts();
     const result = store.generatedOutput;
-    
+
     if (result) {
       // Emit event or navigate to output view
       emit('promptGenerated', result);
@@ -184,37 +201,101 @@ const generatePrompt = async () => {
   }
 };
 
+const loadTemplate = () => {
+  if (selectedTemplateId.value) {
+    store.loadTemplate(selectedTemplateId.value);
+    selectedTemplateId.value = '';
+    showTemplateSelect.value = false;
+    currentStep.value = 1;
+  }
+};
+
+
+
+const handleLoadTemplateDirect = () => {
+  if (selectedTemplateId.value) {
+    // Show confirmation modal
+    modalVariant.value = 'info';
+    modalMessage.value = 'Template akan menimpa data yang sudah ada. Lanjutkan?';
+    showModal.value = true;
+  }
+};
+
+// Handle modal confirmation for template load
+const handleModalConfirm = () => {
+  if (showModal.value && modalVariant.value === 'info' && selectedTemplateId.value) {
+    showModal.value = false;
+    loadTemplate();
+  }
+};
+
 // Emit events
-const emit = defineEmits<{
-  promptGenerated: [result: any];
+const emit = defineEmits<{ 
+  promptGenerated: [result: any]; 
 }>();
+
+// Template options for select
+const templateOptions = computed(() => {
+  return templates.map(template => ({
+    value: template.id,
+    label: template.name,
+    description: template.description
+  }));
+});
 </script>
 
 <template>
-  <div class="space-y-8">
-    <!-- Step Indicator -->
-    <StepIndicator :current-step="currentStep" :total-steps="5" />
+<div class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 items-start">
+
+  <!-- ========== LEFT COLUMN: Main Form ========== -->
+  <div class="space-y-8 min-w-0">
 
     <!-- Step Title Card -->
-    <BaseCard variant="primary">
-      <div class="flex items-center gap-4">
-        <div class="bg-on-surface text-surface w-16 h-16 flex items-center justify-center neo-border text-headline-md font-bold">
-          {{ currentStep }}
+    <BaseCard :variant="currentVariant">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="bg-on-surface text-surface w-16 h-16 flex items-center justify-center neo-border text-headline-md font-black tracking-tighter">
+            <AnimatedCounter :value="currentStep" :duration="200" />
+          </div>
+          <div>
+            <h2 class="text-headline-lg uppercase">{{ currentTitle }}</h2>
+            <p class="text-body-md opacity-80">Step {{ currentStep }} of 5</p>
+          </div>
         </div>
-        <div>
-          <h2 class="text-headline-lg uppercase">{{ currentTitle }}</h2>
-          <p class="text-body-md opacity-80">Step {{ currentStep }} of 5</p>
+        
+        <!-- Template Selector -->
+        <div class="hidden md:flex items-center gap-2">
+          <BaseSelect
+            v-model="selectedTemplateId"
+            :options="templateOptions.map(t => ({ value: t.value, label: t.label }))"
+            placeholder="Load Template"
+            class="min-w-40"
+          />
+          <BaseButton
+            @click="handleLoadTemplateDirect"
+            variant="secondary"
+            size="sm"
+            :disabled="!selectedTemplateId"
+          >
+            <span class="material-symbols-outlined">download</span>
+            Load
+          </BaseButton>
         </div>
       </div>
     </BaseCard>
 
-    <!-- Dynamic Step Component -->
-    <component :is="currentComponent" />
+    <!-- Dynamic Step Component (Color Blocked) -->
+    <Transition name="step" mode="out-in">
+      <BaseCard :key="currentStep" :variant="currentVariant === 'default' ? 'default' : currentVariant">
+        <div class="-ml-8 pl-8 border-l-4" :style="{ borderLeftColor: `var(--color-${currentVariant === 'default' ? 'on-surface' : currentVariant === 'primary' ? 'primary-container' : currentVariant === 'secondary' ? 'secondary-container' : 'tertiary-container'})` }">
+          <component :is="currentComponent" />
+        </div>
+      </BaseCard>
+    </Transition>
 
     <!-- Navigation -->
     <BaseCard variant="default">
       <div class="flex items-center justify-between gap-4">
-        <!-- Previous Button -->
         <BaseButton
           @click="goPrev"
           :disabled="!canGoPrev"
@@ -225,12 +306,10 @@ const emit = defineEmits<{
           Previous
         </BaseButton>
 
-        <!-- Step Counter -->
-        <div class="bg-on-surface text-surface px-6 py-3 neo-border text-headline-sm font-mono">
-          {{ currentStep }} / 5
+        <div class="bg-on-surface text-surface px-6 py-3 neo-border text-headline-sm font-mono font-black tracking-tighter">
+          <AnimatedCounter :value="currentStep" :duration="200" /> / 5
         </div>
 
-        <!-- Next / Generate Button -->
         <BaseButton
           v-if="currentStep < 5"
           @click="goNext"
@@ -254,38 +333,72 @@ const emit = defineEmits<{
         </BaseButton>
       </div>
     </BaseCard>
+  </div>
+
+  <!-- ========== RIGHT COLUMN: Side Panel ========== -->
+  <aside class="space-y-6 lg:sticky lg:top-28">
+
+    <!-- Step Indicator (compact) -->
+    <StepIndicator
+      :current-step="currentStep"
+      :total-steps="5"
+      :step-variants="STEP_BG_CLASSES"
+    />
 
     <!-- Progress Summary -->
-    <BaseCard variant="tertiary">
-      <div class="space-y-3">
-        <h3 class="text-headline-sm uppercase">Progress Summary</h3>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+    <BaseCard variant="tertiary" no-padding>
+      <div class="p-4 space-y-3">
+        <h3 class="text-headline-sm uppercase">Progress</h3>
+        <div class="space-y-2">
           <div
-            v-for="step in 5"
+            v-for="(step, idx) in 5"
             :key="step"
-            class="text-center p-3 neo-border text-label-md transition-all"
-            :class="{
-              'bg-primary-container': step < currentStep,
-              'bg-on-surface text-surface': step === currentStep,
-              'bg-surface-variant opacity-50': step > currentStep
-            }"
+            class="flex items-center gap-3 p-2 neo-border transition-all"
+            :class="[
+              step < currentStep ? stepBgClass(idx + 1) + ' text-on-surface' : '',
+              step === currentStep ? 'bg-on-surface text-surface' : '',
+              step > currentStep ? 'bg-surface-variant opacity-40' : ''
+            ]"
           >
-            <div class="font-bold uppercase text-xs">{{ stepTitles[step] }}</div>
-            <div class="text-xs mt-1">
-              {{ step < currentStep ? '✓ Done' : step === currentStep ? 'Active' : 'Pending' }}
+            <div class="w-8 h-8 flex items-center justify-center neo-border text-label-md font-black shrink-0"
+              :class="step < currentStep ? 'bg-on-surface text-surface' : 'bg-surface'">
+              <span v-if="step < currentStep" class="material-symbols-outlined text-sm">check</span>
+              <span v-else>{{ step }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-label-md uppercase truncate font-bold">{{ stepTitles[step] }}</div>
+              <div class="text-xs opacity-70">{{ step < currentStep ? 'Selesai' : step === currentStep ? 'Sedang diisi' : 'Menunggu' }}</div>
             </div>
           </div>
         </div>
       </div>
     </BaseCard>
 
-    <!-- Validation Modal -->
-    <BaseModal
-      v-model="showModal"
-      :variant="modalVariant"
-      title="Validation"
-    >
-      <p class="text-body-md">{{ modalMessage }}</p>
-    </BaseModal>
-  </div>
+    <!-- Quick Tip -->
+    <BaseCard variant="outline" no-padding>
+      <div class="p-4">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-primary-container text-2xl">lightbulb</span>
+          <div>
+            <h4 class="text-label-md uppercase font-bold">Quick Tip</h4>
+            <p class="text-body-sm mt-1 text-on-surface-variant">
+              Semakin detail data yang kamu isi, semakin bagus prompt yang dihasilkan. Fokus di deskripsi dan keunggulan!
+            </p>
+          </div>
+        </div>
+      </div>
+    </BaseCard>
+  </aside>
+
+  <!-- Validation Modal -->
+  <BaseModal
+    v-model="showModal"
+    :variant="modalVariant"
+    title="Validation"
+    @confirm="handleModalConfirm"
+    class="col-span-full"
+  >
+    <p class="text-body-md">{{ modalMessage }}</p>
+  </BaseModal>
+</div>
 </template>

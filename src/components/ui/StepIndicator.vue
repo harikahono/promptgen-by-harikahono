@@ -4,10 +4,18 @@ import { computed } from 'vue';
 interface Props {
   currentStep: number;
   totalSteps?: number;
+  stepVariants?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  totalSteps: 5
+  totalSteps: 5,
+  stepVariants: () => [
+    'bg-primary-container',
+    'bg-secondary-container',
+    'bg-tertiary-container',
+    'bg-surface',
+    'bg-primary-container'
+  ]
 });
 
 const steps = computed(() => {
@@ -31,11 +39,13 @@ const getStepClasses = (step: number) => {
     'neo-border',
     'font-bold',
     'text-label-lg',
-    'transition-all'
+    'transition-all',
+    'text-sm'
   ];
 
   if (state === 'completed') {
-    classes.push('bg-primary-container', 'text-on-surface');
+    const variantClass = props.stepVariants[step - 1] || 'bg-primary-container';
+    classes.push(variantClass, 'text-on-surface');
   } else if (state === 'active') {
     classes.push('bg-on-surface', 'text-surface', 'neo-shadow');
   } else {
@@ -50,28 +60,28 @@ const getStepClasses = (step: number) => {
   <nav class="bg-surface neo-border neo-shadow-lg p-6" aria-label="Wizard progress">
     <div class="flex items-center justify-center gap-2">
       <template v-for="(step, index) in steps" :key="step">
-        <!-- Step Circle -->
+        <!-- Step Square -->
         <div
           :class="getStepClasses(step)"
           :aria-current="step === currentStep ? 'step' : undefined"
         >
-          <span v-if="getStepState(step) === 'completed'" class="material-symbols-outlined">
+          <span v-if="getStepState(step) === 'completed'" class="material-symbols-outlined text-xl">
             check
           </span>
-          <span v-else>{{ step }}</span>
+          <span v-else class="font-black text-lg">{{ step }}</span>
         </div>
 
-        <!-- Connector Line -->
+        <!-- Connector (dashed line) -->
         <div
           v-if="index < steps.length - 1"
-          class="h-1 w-8 bg-on-surface transition-opacity"
-          :class="step < currentStep ? 'opacity-100' : 'opacity-20'"
+          class="w-8 border-t-2 border-dashed border-on-surface transition-all duration-300"
+          :class="step <= currentStep ? 'opacity-100' : 'opacity-20'"
         />
       </template>
     </div>
 
     <!-- Step Label -->
-    <p class="text-center text-label-md text-on-surface-variant mt-4 uppercase">
+    <p class="text-center text-label-md text-on-surface-variant mt-4 uppercase tracking-widest">
       Step {{ currentStep }} of {{ totalSteps }}
     </p>
   </nav>

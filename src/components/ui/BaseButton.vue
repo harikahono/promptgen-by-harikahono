@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
@@ -34,12 +34,13 @@ const buttonClasses = computed(() => {
   ];
 
   // Variant styles
-  const variantClasses = {
+  const variantClasses: Record<string, string> = {
     primary: 'bg-primary-container text-on-surface',
     secondary: 'bg-secondary-fixed-dim text-on-surface',
     tertiary: 'bg-tertiary-container text-on-surface',
     ghost: 'bg-surface text-on-surface',
-    danger: 'bg-error text-on-error'
+    danger: 'bg-error text-on-error',
+    outline: 'bg-transparent text-on-surface hover:bg-surface'
   };
   classes.push(variantClasses[props.variant]);
 

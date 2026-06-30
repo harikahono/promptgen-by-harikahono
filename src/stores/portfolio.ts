@@ -3,16 +3,17 @@ import { ref, computed } from 'vue';
 import { nanoid } from 'nanoid';
 import { getDemoData } from '../data/demoProfessions';
 import { getGenerator } from '../adapters';
-import type {
-  PortfolioData,
-  IdentitasData,
-  LayananItem,
-  ProyekItem,
-  DesainData,
-  TargetTool,
-  GeneratorOutput,
-  StoredPortfolioData
+import type { 
+  PortfolioData, 
+  IdentitasData, 
+  LayananItem, 
+  ProyekItem, 
+  DesainData, 
+  TargetTool, 
+  GeneratorOutput, 
+  StoredPortfolioData 
 } from '../types/portfolio';
+import { getTemplateById } from '../data/templates';
 import {
   IdentitasSchema,
   LayananSchema,
@@ -23,6 +24,7 @@ import {
 
 const STORAGE_KEY = 'jarvis-portfolio-v1';
 const CURRENT_VERSION = 1;
+const ALL_TARGETS: TargetTool[] = ['claude', 'lovable', 'v0'];
 
 export const usePortfolioStore = defineStore('portfolio', () => {
   // ===== STATE (semua pakai ref untuk consistency) =====
@@ -67,11 +69,14 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     efekVisual: ''
   });
 
-  // Step 5: Target Tool
-  const selectedTarget = ref<TargetTool | null>(null);
+// Step 5: Target Tool
+const selectedTarget = ref<TargetTool | null>(null);
 
-  // Generated output
-  const generatedOutput = ref<GeneratorOutput | null>(null);
+// Generated output
+const generatedOutput = ref<GeneratorOutput | null>(null);
+
+// Cached outputs for all targets
+const cachedOutputs = ref<Record<TargetTool, GeneratorOutput>>({} as Record<TargetTool, GeneratorOutput>);
 
   // Validation errors
   const validationErrors = ref<Record<string, string[]>>({});
@@ -225,35 +230,124 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     return true;
   }
 
-  // ===== ACTIONS: Generate Prompt =====
-  function generatePrompt() {
-    if (!validateAll()) {
-      console.error('JARVIS: Data belum valid. Fix errors dulu.');
-      return;
-    }
+// ===== ACTIONS: Generate Prompt =====
+function generatePrompt() {
+  if (!validateAll()) {
+    console.error('JARVIS: Data belum valid. Fix errors dulu.');
+    return;
+  }
 
-    if (!selectedTarget.value) {
-      console.error('JARVIS: Pilih target tool dulu.');
-      return;
-    }
+  if (!selectedTarget.value) {
+    console.error('JARVIS: Pilih target tool dulu.');
+    return;
+  }
 
+  try {
+    const generator = getGenerator(selectedTarget.value);
+    
+    const fullData: PortfolioData = {
+      identitas: identitas.value as IdentitasData,
+      layanan: layanan.value,
+      proyek: proyek.value,
+      desain: desain.value as DesainData,
+      selectedTarget: selectedTarget.value
+    };
+    
+    generatedOutput.value = generator.generate(fullData);
+    cachedOutputs.value[selectedTarget.value] = generatedOutput.value;
+    console.log(`JARVIS: Prompt generated untuk ${selectedTarget.value}.`);
+  } catch (error) {
+    console.error('JARVIS: Gagal generate prompt.', error);
+  }
+}
+
+// Generate and cache prompts for all targets
+function generateAndCacheAllPrompts() {
+  if (!validateAll()) {
+    console.error('JARVIS: Data belum valid. Fix errors dulu.');
+    return;
+  }
+
+  try {
+    const fullData: PortfolioData = {
+      identitas: identitas.value as IdentitasData,
+      layanan: layanan.value,
+      proyek: proyek.value,
+      desain: desain.value as DesainData,
+      selectedTarget: selectedTarget.value || 'claude'
+    };
+
+    ALL_TARGETS.forEach(target => {
+      if (!cachedOutputs.value[target]) {
+        const generator = getGenerator(target);
+        const outputWithTarget = generator.generate({ ...fullData, selectedTarget: target });
+        cachedOutputs.value[target] = outputWithTarget;
+      }
+    });
+    
+    // Set generatedOutput to the selected target if available
+    if (selectedTarget.value && cachedOutputs.value[selectedTarget.value]) {
+      generatedOutput.value = cachedOutputs.value[selectedTarget.value];
+    }
+    
+    console.log('JARVIS: All prompts cached for claude, lovable, v0.');
+  } catch (error) {
+    console.error('JARVIS: Gagal generate all prompts.', error);
+  }
+}
+
+// Get cached output for a specific target, generate if not cached
+function getCachedOutput(target: TargetTool): GeneratorOutput | null {
+  if (cachedOutputs.value[target]) {
+    return cachedOutputs.value[target];
+  }
+  
+  // If not cached, generate and cache it
+  if (validateAll()) {
+    const fullData: PortfolioData = {
+      identitas: identitas.value as IdentitasData,
+      layanan: layanan.value,
+      proyek: proyek.value,
+      desain: desain.value as DesainData,
+      selectedTarget: target
+    };
+    
     try {
-      const generator = getGenerator(selectedTarget.value);
-
-      const fullData: PortfolioData = {
-        identitas: identitas.value as IdentitasData,
-        layanan: layanan.value,
-        proyek: proyek.value,
-        desain: desain.value as DesainData,
-        selectedTarget: selectedTarget.value
-      };
-
-      generatedOutput.value = generator.generate(fullData);
-      console.log(`JARVIS: Prompt generated untuk ${selectedTarget.value}.`);
+      const generator = getGenerator(target);
+      const output = generator.generate(fullData);
+      cachedOutputs.value[target] = output;
+      return output;
     } catch (error) {
-      console.error('JARVIS: Gagal generate prompt.', error);
+      console.error(`JARVIS: Gagal generate prompt untuk ${target}.`, error);
+      return null;
     }
   }
+  
+  return null;
+}
+
+// Load template into form
+function loadTemplate(templateId: string) {
+  const template = getTemplateById(templateId);
+  if (!template) {
+    console.warn(`JARVIS: Template "${templateId}" tidak ditemukan.`);
+    return;
+  }
+
+  // Load all data from template
+  identitas.value = template.data.identitas;
+  layanan.value = template.data.layanan;
+  proyek.value = template.data.proyek;
+  desain.value = template.data.desain;
+  selectedTarget.value = template.data.selectedTarget || null;
+
+  // Clear cached outputs since data changed
+  cachedOutputs.value = {} as Record<TargetTool, GeneratorOutput>;
+  generatedOutput.value = null;
+
+  console.log(`JARVIS: Template "${templateId}" loaded successfully.`);
+  saveToLocalStorage();
+}
 
   // ===== ACTIONS: Reset =====
   function reset() {
@@ -279,24 +373,29 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   }
 
   // ===== PERSISTENCE: LocalStorage dengan Versioning =====
-  function saveToLocalStorage() {
-    try {
-      const stored: StoredPortfolioData = {
-        version: CURRENT_VERSION,
-        data: {
-          identitas: identitas.value as IdentitasData,
-          layanan: layanan.value,
-          proyek: proyek.value,
-          desain: desain.value as DesainData,
-          selectedTarget: selectedTarget.value || undefined
-        },
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-    } catch (error) {
-      console.error('JARVIS: Gagal save ke localStorage.', error);
-    }
+function saveToLocalStorage() {
+  try {
+    const stored: StoredPortfolioData = {
+      version: CURRENT_VERSION,
+      data: {
+        identitas: identitas.value as IdentitasData,
+        layanan: layanan.value,
+        proyek: proyek.value,
+        desain: desain.value as DesainData,
+        selectedTarget: selectedTarget.value || undefined
+      },
+      lastUpdated: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  } catch (error) {
+    console.error('JARVIS: Gagal save ke localStorage.', error);
   }
+}
+
+function clearCache() {
+  cachedOutputs.value = {} as Record<TargetTool, GeneratorOutput>;
+  generatedOutput.value = null;
+}
 
   function loadFromLocalStorage() {
     try {
@@ -328,36 +427,41 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   // Auto-load on init
   loadFromLocalStorage();
 
-  return {
-    // State
-    currentStep,
-    maxStep,
-    identitas,
-    layanan,
-    proyek,
-    desain,
-    selectedTarget,
-    generatedOutput,
-    validationErrors,
+return {
+  // State
+  currentStep,
+  maxStep,
+  identitas,
+  layanan,
+  proyek,
+  desain,
+  selectedTarget,
+  generatedOutput,
+  cachedOutputs,
+  validationErrors,
 
-    // Computed
-    canProceedToNext,
-    isStepValid,
+  // Computed
+  canProceedToNext,
+  isStepValid,
 
-    // Actions
-    nextStep,
-    prevStep,
-    goToStep,
-    addLayanan,
-    removeLayanan,
-    updateLayanan,
-    addProyek,
-    removeProyek,
-    updateProyek,
-    loadDemoData,
-    validateAll,
-    generatePrompt,
-    reset,
-    saveToLocalStorage
-  };
+  // Actions
+  nextStep,
+  prevStep,
+  goToStep,
+  addLayanan,
+  removeLayanan,
+  updateLayanan,
+  addProyek,
+  removeProyek,
+  updateProyek,
+  loadDemoData,
+  loadTemplate,
+  validateAll,
+  generatePrompt,
+  generateAndCacheAllPrompts,
+  getCachedOutput,
+  reset,
+  saveToLocalStorage,
+  clearCache
+};
 });
