@@ -15,14 +15,20 @@ const props = withDefaults(defineProps<Props>(), {
   closable: true
 });
 
-const emit = defineEmits<{
+const emit = defineEmits<{ 
   'update:modelValue': [value: boolean];
   close: [];
+  confirm: [];
 }>();
 
 const close = () => {
   emit('update:modelValue', false);
   emit('close');
+};
+
+const confirm = () => {
+  emit('confirm');
+  emit('update:modelValue', false);
 };
 
 const handleBackdropClick = () => {
@@ -135,13 +141,23 @@ const config = variantConfig[props.variant];
             <slot name="footer" />
           </div>
 
-          <!-- Default Footer (if no slot provided) -->
-          <div v-else-if="closable" class="p-6 border-t-4 border-on-surface bg-surface-variant">
-            <BaseButton @click="close" variant="primary" full-width>
-              <span class="material-symbols-outlined">check</span>
-              OK
-            </BaseButton>
-          </div>
+<!-- Default Footer (if no slot provided) -->
+<div v-else class="p-6 border-t-4 border-on-surface bg-surface-variant">
+  <div class="flex gap-4">
+    <BaseButton @click="close" variant="ghost" full-width>
+      <span class="material-symbols-outlined">close</span>
+      Cancel
+    </BaseButton>
+    <BaseButton 
+      @click="confirm"
+      variant="primary" 
+      full-width
+    >
+      <span class="material-symbols-outlined">check</span>
+      OK
+    </BaseButton>
+  </div>
+</div>
         </div>
       </div>
     </Transition>
