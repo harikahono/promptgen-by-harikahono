@@ -51,9 +51,11 @@ ${desain.efekVisual ? `Efek Background : ${desain.efekVisual}` : ''}
 `.trim();
 
     const systemPrompt = `
+<task>
 Buatkan web portfolio satu halaman (single page) menggunakan HTML, CSS, dan JavaScript murni.
+</task>
 
-REQUIREMENT TEKNIS:
+<technical_requirements>
 - Satu file HTML lengkap yang bisa langsung dibuka di browser
 - Semua CSS di dalam tag <style> (inline styles)
 - Semua JavaScript di dalam tag <script> (inline scripts)
@@ -62,8 +64,10 @@ REQUIREMENT TEKNIS:
 - Semantic HTML5 (header, nav, main, section, article, footer)
 - Aksesibilitas: aria-labels, alt text, keyboard navigation
 - Performance: lazy loading untuk images, smooth scroll behavior
+- Jangan gunakan framework, build tools, atau external JS dependency
+</technical_requirements>
 
-STRUKTUR WAJIB:
+<page_structure>
 1. Navbar sticky dengan glassmorphism effect
 2. Hero section dengan CTA
 3. Tentang Saya + 3 keunggulan (tampilkan dalam card/grid)
@@ -71,8 +75,9 @@ STRUKTUR WAJIB:
 5. Portfolio/Proyek dengan filter kategori (jika ada)
 6. Kontak section dengan social links
 7. Footer dengan copyright
+</page_structure>
 
-STYLE GUIDE:
+<style_guide>
 - Modern, clean, professional
 - Animasi: smooth scroll, fade-in on scroll (Intersection Observer)
 - Hover effects: subtle shadows, scale transform
@@ -80,6 +85,9 @@ STYLE GUIDE:
 - Typography: hierarchy jelas (display font untuk headers, body font untuk content)
 - Spacing: generous whitespace, consistent padding/margin
 - Mobile: hamburger menu, stacked layout
+- Gunakan data asli di bawah. Jangan isi section dengan konten palsu.
+- Jika layanan/proyek kosong, jangan buat section dummy.
+</style_guide>
 `.trim();
 
     const fullPrompt = `
@@ -105,10 +113,11 @@ ${desainSection}
 
 ---
 
-INSTRUKSI AKHIR:
+<output_contract>
 Generate satu file index.html lengkap dengan semua CSS dan JavaScript inline.
-Pastikan kode bersih, terstruktur, dan siap di-copy-paste.
-Output harus langsung bisa dibuka di browser tanpa error.
+Output hanya kode HTML lengkap, tanpa penjelasan sebelum/sesudah kode.
+Sebelum selesai, pastikan responsive, accessible, dan tidak ada error JavaScript.
+</output_contract>
 `.trim();
 
     const estimatedTokens = formatters.estimateTokens(fullPrompt);

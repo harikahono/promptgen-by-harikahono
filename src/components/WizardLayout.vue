@@ -69,73 +69,17 @@ const canGenerate = computed(() => {
 
 // Validate current step before moving forward
 const validateCurrentStep = (): { valid: boolean; message: string } => {
-  switch (currentStep.value) {
-    case 1: // Identitas
-      if (!store.identitas.nama || store.identitas.nama.trim().length < 2) {
-        return { valid: false, message: 'Nama harus diisi (minimal 2 karakter)' };
-      }
-      if (!store.identitas.profesi || store.identitas.profesi.trim().length < 2) {
-        return { valid: false, message: 'Profesi harus diisi (minimal 2 karakter)' };
-      }
-      if (!store.identitas.tagline || store.identitas.tagline.trim().length < 10) {
-        return { valid: false, message: 'Tagline harus diisi (minimal 10 karakter)' };
-      }
-      if (!store.identitas.deskripsi || store.identitas.deskripsi.trim().length < 20) {
-        return { valid: false, message: 'Deskripsi harus diisi (minimal 20 karakter)' };
-      }
-      if (!store.identitas.email || !store.identitas.email.includes('@')) {
-        return { valid: false, message: 'Email harus diisi dengan format yang valid' };
-      }
-      // Check keunggulan
-      if (!store.identitas.keunggulan || store.identitas.keunggulan.length !== 3) {
-        return { valid: false, message: 'Harus ada 3 keunggulan' };
-      }
-      for (let i = 0; i < 3; i++) {
-        const k = store.identitas.keunggulan[i];
-        if (!k || !k.judul || k.judul.trim().length < 3) {
-          return { valid: false, message: `Keunggulan ${i + 1}: Judul harus diisi (minimal 3 karakter)` };
-        }
-        if (!k.deskripsi || k.deskripsi.trim().length < 10) {
-          return { valid: false, message: `Keunggulan ${i + 1}: Deskripsi harus diisi (minimal 10 karakter)` };
-        }
-      }
-      return { valid: true, message: '' };
+  if (store.isStepValid(currentStep.value)) return { valid: true, message: '' };
 
-    case 2: // Layanan
-      if (store.layanan.length === 0) {
-        return { valid: false, message: 'Minimal tambahkan 1 layanan' };
-      }
-      for (const layanan of store.layanan) {
-        if (!layanan.nama || layanan.nama.trim().length < 3) {
-          return { valid: false, message: 'Semua layanan harus memiliki nama (minimal 3 karakter)' };
-        }
-      }
-      return { valid: true, message: '' };
+  const messages: Record<number, string> = {
+    1: 'Lengkapi identitas sesuai aturan field.',
+    2: 'Nama layanan minimal 3 karakter kalau layanan diisi.',
+    3: 'Nama proyek minimal 3 karakter kalau proyek diisi.',
+    4: 'Cek ulang setting desain.',
+    5: 'Pilih target platform terlebih dahulu.'
+  };
 
-    case 3: // Proyek
-      if (store.proyek.length === 0) {
-        return { valid: false, message: 'Minimal tambahkan 1 proyek' };
-      }
-      for (const proyek of store.proyek) {
-        if (!proyek.nama || proyek.nama.trim().length < 3) {
-          return { valid: false, message: 'Semua proyek harus memiliki nama (minimal 3 karakter)' };
-        }
-      }
-      return { valid: true, message: '' };
-
-    case 4: // Desain
-      // Desain optional, always valid
-      return { valid: true, message: '' };
-
-    case 5: // Target
-      if (!store.selectedTarget) {
-        return { valid: false, message: 'Pilih target platform terlebih dahulu' };
-      }
-      return { valid: true, message: '' };
-
-    default:
-      return { valid: true, message: '' };
-  }
+  return { valid: false, message: messages[currentStep.value] || 'Data step belum valid.' };
 };
 
 const goNext = () => {

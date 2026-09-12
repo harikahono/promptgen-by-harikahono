@@ -18,6 +18,8 @@ export const v0Generator: PromptGenerator = {
     // Component-oriented prompt
     const componentSpec = `
 Create a modern portfolio website for ${identitas.nama}, a ${identitas.profesi}.
+Goal: convert visitors into leads who contact ${identitas.nama}.
+Use the real content below. Do not invent placeholder content.
 
 PERSONA:
 Name: ${identitas.nama}
@@ -86,6 +88,13 @@ TECHNICAL STACK:
 - Lucide icons
 - next-themes for dark mode
 
+BUILD APPROACH:
+- Component-first. Keep each section clean and reusable.
+- Prefer shadcn/ui primitives for Button, Card, Badge, Tabs, Sheet, Separator.
+- Include mobile, tablet, and desktop responsive behavior.
+- Include useful empty states when services/projects are absent.
+- Do not create fake dashboard/admin UI. This is a portfolio/landing page.
+
 COMPONENTS STRUCTURE:
 1. Hero Section
    - Large heading with gradient
@@ -120,6 +129,8 @@ INTERACTIONS:
 - Fade-in animations on scroll
 - Hover effects on cards/buttons
 - Filter transition animations
+- Mobile navigation with accessible menu button
+- Clear focus states for keyboard users
 `.trim();
 
     const fullPrompt = `
@@ -146,6 +157,7 @@ Generate Next.js 14 App Router components with TypeScript.
 Use shadcn/ui for UI primitives.
 Implement responsive design with Tailwind.
 Code should be production-ready and follow Next.js best practices.
+Handle missing optional data gracefully; never render empty placeholder sections.
 
 Focus on: clean component composition, type safety, and performance.
 `.trim();

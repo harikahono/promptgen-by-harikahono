@@ -1,5 +1,6 @@
 // src/adapters/base.ts
 import type { PortfolioData, GeneratorOutput } from '../types/portfolio';
+import { getThemeByName } from '../data/themes';
 
 /**
  * Interface untuk semua generator.
@@ -67,7 +68,17 @@ export const formatters = {
    */
   formatColors(desain: PortfolioData['desain']): string {
     if (desain.theme !== 'custom' && desain.theme) {
-      return `Tema preset: ${desain.theme} (AI akan apply tema ini dengan palette yang sesuai)`;
+      const theme = getThemeByName(desain.theme);
+
+      if (theme) {
+        const [primary, secondary, accent] = theme.colors;
+        return `Tema preset: ${theme.name} (${theme.type})
+- Primary: ${primary}
+- Secondary: ${secondary}
+- Accent: ${accent}`;
+      }
+
+      return `Tema preset: ${desain.theme}`;
     }
 
     if (desain.customColors) {

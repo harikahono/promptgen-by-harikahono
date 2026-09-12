@@ -23,8 +23,9 @@ const validateField = (field: string, value: any) => {
       fieldSchema.parse(value);
       errors.value[field] = '';
     }
-  } catch (error: any) {
-    errors.value[field] = error.errors[0]?.message || 'Input tidak valid';
+  } catch (error) {
+    const issues = (error as { issues?: { message: string }[] }).issues;
+    errors.value[field] = issues?.[0]?.message || 'Input tidak valid';
   }
 };
 
@@ -32,6 +33,7 @@ const validateField = (field: string, value: any) => {
 const updateField = (field: keyof typeof identitas.value, value: string) => {
   (identitas.value[field] as any) = value;
   validateField(field, value);
+  store.markDirty();
 };
 
 const updateKeunggulan = (index: number, field: 'judul' | 'deskripsi', value: string) => {
@@ -47,6 +49,7 @@ const updateKeunggulan = (index: number, field: 'judul' | 'deskripsi', value: st
   }
   identitas.value.keunggulan[index][field] = value;
   validateField('keunggulan', identitas.value.keunggulan);
+  store.markDirty();
 };
 </script>
 
