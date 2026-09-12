@@ -138,11 +138,13 @@ const cachedOutputs = ref<Record<TargetTool, GeneratorOutput>>({} as Record<Targ
       fitur: ''
     });
     saveToLocalStorage();
+    clearCache();
   }
 
   function removeLayanan(id: string) {
     layanan.value = layanan.value.filter(l => l.id !== id);
     saveToLocalStorage();
+    clearCache();
   }
 
   function updateLayanan(id: string, data: Partial<LayananItem>) {
@@ -150,6 +152,7 @@ const cachedOutputs = ref<Record<TargetTool, GeneratorOutput>>({} as Record<Targ
     if (index !== -1) {
       layanan.value[index] = { ...layanan.value[index], ...data };
       saveToLocalStorage();
+      clearCache();
     }
   }
 
@@ -166,11 +169,13 @@ const cachedOutputs = ref<Record<TargetTool, GeneratorOutput>>({} as Record<Targ
       deskripsi: ''
     });
     saveToLocalStorage();
+    clearCache();
   }
 
   function removeProyek(id: string) {
     proyek.value = proyek.value.filter(p => p.id !== id);
     saveToLocalStorage();
+    clearCache();
   }
 
   function updateProyek(id: string, data: Partial<ProyekItem>) {
@@ -178,7 +183,13 @@ const cachedOutputs = ref<Record<TargetTool, GeneratorOutput>>({} as Record<Targ
     if (index !== -1) {
       proyek.value[index] = { ...proyek.value[index], ...data };
       saveToLocalStorage();
+      clearCache();
     }
+  }
+
+  function markDirty() {
+    saveToLocalStorage();
+    clearCache();
   }
 
   // ===== ACTIONS: Demo Data =====
@@ -278,11 +289,9 @@ function generateAndCacheAllPrompts() {
     };
 
     ALL_TARGETS.forEach(target => {
-      if (!cachedOutputs.value[target]) {
-        const generator = getGenerator(target);
-        const outputWithTarget = generator.generate({ ...fullData, selectedTarget: target });
-        cachedOutputs.value[target] = outputWithTarget;
-      }
+      const generator = getGenerator(target);
+      const outputWithTarget = generator.generate({ ...fullData, selectedTarget: target });
+      cachedOutputs.value[target] = outputWithTarget;
     });
     
     // Set generatedOutput to the selected target if available
@@ -462,6 +471,7 @@ return {
   getCachedOutput,
   reset,
   saveToLocalStorage,
-  clearCache
+  clearCache,
+  markDirty
 };
 });

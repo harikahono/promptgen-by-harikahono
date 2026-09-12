@@ -4,7 +4,7 @@ import { computed } from 'vue';
 interface Props {
   currentStep: number;
   totalSteps?: number;
-  stepVariants?: string[];
+  stepVariants?: readonly string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {

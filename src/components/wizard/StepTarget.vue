@@ -60,6 +60,7 @@ const targets: TargetOption[] = [
 
 const selectTarget = (target: TargetTool) => {
   store.selectedTarget = target;
+  store.markDirty();
 };
 
 const isSelected = (target: TargetTool) => {

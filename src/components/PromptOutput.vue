@@ -19,20 +19,16 @@ const copied = ref<Record<TargetTool, boolean>>({
   v0: false
 });
 
-const activeTab = ref<TargetTool>('claude');
+const activeTab = ref<TargetTool>(store.selectedTarget || 'claude');
+
+const outputFor = (target: TargetTool) => store.getCachedOutput(target) || props.output;
 
 const promptLines = computed(() => {
-  const output = activeTab.value === (props.output.targetName.toLowerCase() as TargetTool)
-    ? props.output 
-    : store.getCachedOutput(activeTab.value as TargetTool);
-  return output?.prompt.split('\n').length || 0;
+  return currentOutput.value.prompt.split('\n').length;
 });
 
 const currentOutput = computed(() => {
-  if (activeTab.value === (props.output.targetName.toLowerCase() as TargetTool)) {
-    return props.output;
-  }
-  return store.getCachedOutput(activeTab.value as TargetTool);
+  return outputFor(activeTab.value);
 });
 
 const estimatedTokens = computed(() => {
@@ -48,20 +44,20 @@ const tabIcon = (target: TargetTool): string => {
   return icons[target];
 };
 
-const tabColors: Record<TargetTool, string> = {
-  claude: 'primary',
-  lovable: 'tertiary',
-  v0: 'secondary'
-} as const;
+const targetUrls: Record<TargetTool, string> = {
+  claude: 'https://claude.ai/new',
+  lovable: 'https://lovable.dev',
+  v0: 'https://v0.dev/chat'
+};
+
+const platformUrl = (target: TargetTool) => {
+  if (target !== 'lovable') return targetUrls[target];
+  return `https://lovable.dev/#prompt=${encodeURIComponent(outputFor(target).prompt)}`;
+};
 
 const copyToClipboard = async (target: TargetTool) => {
   try {
-    const output = target === (props.output.targetName.toLowerCase() as TargetTool)
-      ? props.output 
-      : store.getCachedOutput(target);
-    
-    if (!output) { console.error('No output to copy for target:', target); return; }
-    
+    const output = outputFor(target);
     await navigator.clipboard.writeText(output.prompt);
     copied.value[target] = true;
     setTimeout(() => { copied.value[target] = false; }, 2000);
@@ -71,12 +67,15 @@ const copyToClipboard = async (target: TargetTool) => {
   }
 };
 
+const copyAndOpen = async (target: TargetTool) => {
+  await copyToClipboard(target);
+  window.open(platformUrl(target), '_blank', 'noopener,noreferrer');
+};
+
 const downloadAsText = (target?: TargetTool) => {
-  const output = target 
-    ? store.getCachedOutput(target) || props.output
-    : props.output;
+  const output = target ? outputFor(target) : currentOutput.value;
   
-  const targetName = target || props.output.targetName;
+  const targetName = target || activeTab.value;
   const blob = new Blob([output.prompt], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -187,6 +186,14 @@ const ensureAllPromptsCached = () => {
         >
           <span class="material-symbols-outlined">{{ copied[activeTab] ? 'check' : 'content_copy' }}</span>
           {{ copied[activeTab] ? 'Copied!' : 'Copy' }}
+        </BaseButton>
+        <BaseButton
+          @click="ensureAllPromptsCached(); copyAndOpen(activeTab)"
+          variant="primary"
+          size="sm"
+        >
+          <span class="material-symbols-outlined">open_in_new</span>
+          Copy & Open
         </BaseButton>
       </div>
     </div>

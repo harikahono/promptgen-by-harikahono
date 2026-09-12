@@ -17,11 +17,15 @@ export const lovableGenerator: PromptGenerator = {
 
     // More natural, conversational tone
     const intro = `
-Halo! Bantu aku buat portfolio website yang eye-catching untuk ${identitas.profesi} bernama ${identitas.nama}.
+Build a polished portfolio website for ${identitas.nama}, a ${identitas.profesi}.
 
-Tagline-nya: "${identitas.tagline}"
+Goal: turn visitors into leads who contact ${identitas.nama}.
+Main CTA: contact / hire me.
+Tagline: "${identitas.tagline}"
 
-Tentang ${identitas.nama.split(' ')[0]}:
+Use this real content, not placeholder text.
+
+About ${identitas.nama.split(' ')[0]}:
 ${identitas.deskripsi}
 `.trim();
 
@@ -81,12 +85,19 @@ Design harus looks high-end, premium, dan memorable.
 `.trim();
 
     const techRequirements = `
-TECH STACK (Lovable default):
+TECH STACK:
 - React + TypeScript
 - Tailwind CSS untuk styling
 - Framer Motion untuk animasi smooth
 - Lucide React untuk ikon
 - Vite sebagai build tool
+
+BUILD METHOD:
+- Think in components: Hero, About, Strengths, Services, Projects, Contact, Footer
+- Use real copy from this prompt in every section
+- Add responsive mobile, tablet, desktop layouts
+- Add loading/empty/error states only where useful
+- Keep the page focused: no dashboards, no fake SaaS UI, no placeholder lorem ipsum
 
 REQUIREMENTS:
 ✅ Fully responsive (mobile-first)
@@ -119,18 +130,16 @@ ${techRequirements}
 
 ---
 
-Tolong buatkan portfolio website yang benar-benar stand out. 
-Jangan bikin yang generic — ini harus reflects personality dari ${identitas.nama} sebagai ${identitas.profesi}.
+Build the full page now. If something is ambiguous but not blocking, make a tasteful default and continue.
+Jangan bikin generic — ini harus reflect personality dari ${identitas.nama} sebagai ${identitas.profesi}.
 
 Structure:
-1. Hero section yang WOW dengan gradient + animation
+1. Hero section yang clear, premium, dan conversion-focused
 2. About section dengan 3 keunggulan cards
 3. Services/Layanan section (kalau ada)
 4. Portfolio grid dengan smooth filter
 5. Contact section dengan social links yang clickable
 6. Footer minimal
-
-Let's make something beautiful! 🚀
 `.trim();
 
     const estimatedTokens = formatters.estimateTokens(fullPrompt);

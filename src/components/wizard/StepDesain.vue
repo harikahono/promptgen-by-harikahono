@@ -25,10 +25,12 @@ const efekVisualOptionsList: SelectOption[] = efekVisualOptions.map(e => ({ valu
 
 const updateTheme = (themeName: string) => {
   desain.value.theme = themeName;
+  store.markDirty();
 };
 
 const updateField = (field: keyof typeof desain.value, value: string) => {
   (desain.value[field] as any) = value;
+  store.markDirty();
 };
 </script>
 
