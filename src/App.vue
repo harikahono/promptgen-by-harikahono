@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted, provide } from 'vue';
 import { usePortfolioStore } from '@/stores/portfolio';
 import WizardLayout from './components/WizardLayout.vue';
 import PromptOutput from './components/PromptOutput.vue';
@@ -36,6 +36,33 @@ const confirmReset = () => {
     showOutput.value = false;
   }
 };
+
+// Compact header: hide on scroll down, show on scroll up
+const showHeader = ref(true);
+let lastY = 0;
+const onScroll = () => {
+  const y = window.scrollY;
+  if (y < 120) {
+    showHeader.value = true;
+  } else if (y > lastY + 2) {
+    showHeader.value = false;
+  } else if (y < lastY - 2) {
+    showHeader.value = true;
+  }
+  lastY = y;
+};
+
+onMounted(() => {
+  lastY = window.scrollY;
+  window.addEventListener('scroll', onScroll, { passive: true });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll);
+});
+
+// Sidebar sticky offset ngikutin navbar
+provide('showHeader', showHeader);
 </script>
 
 <template>
@@ -51,16 +78,19 @@ const confirmReset = () => {
       <DecoShape type="circle" color="bg-primary-container" size="w-24 h-24" rotation="" opacity="opacity-[0.1]" position="bottom-[50%] right-[15%]" hidden-class="animate-float-slow-circle" />
     </div>
     <!-- Header -->
-    <header class="bg-primary-container border-b-4 border-on-surface sticky top-0 z-50 overflow-hidden">
-      <div class="max-w-6xl mx-auto px-6 py-5 md:py-8">
-        <div class="flex items-center justify-between">
+    <header
+      class="bg-primary-container border-b-4 border-on-surface sticky top-0 z-50 overflow-hidden transition-transform duration-300 will-change-transform"
+      :class="{ '-translate-y-[110%]': !showHeader }"
+    >
+      <div class="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-4">
+        <div class="flex items-center justify-between gap-3">
           <div>
-            <h1 class="text-display-lg uppercase text-outline leading-none">
+            <h1 class="text-headline-md uppercase text-outline leading-none">
               PromptGen
             </h1>
-            <div class="flex items-center gap-3 mt-2">
-              <span class="w-8 h-1 bg-on-surface inline-block" />
-              <p class="text-body-sm md:text-body-md opacity-80 font-semibold">by <span class="underline decoration-2 underline-offset-2">Harikahono</span></p>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="w-6 h-1 bg-on-surface inline-block" />
+              <p class="text-body-sm opacity-80 font-semibold">by <span class="underline decoration-2 underline-offset-2">Harikahono</span></p>
             </div>
           </div>
           
@@ -75,12 +105,6 @@ const confirmReset = () => {
               <span class="material-symbols-outlined text-xl">delete</span>
               <span class="hidden md:inline">Reset</span>
             </button>
-            <div class="hidden md:flex items-center gap-2">
-              <div class="bg-surface neo-border px-4 py-2 text-label-md">
-                <span class="material-symbols-outlined text-base align-middle mr-1">auto_awesome</span>
-                AI Portfolio Generator
-              </div>
-            </div>
           </div>
         </div>
       </div>

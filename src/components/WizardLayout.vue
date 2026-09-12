@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, type Component } from 'vue';
+import { ref, computed, inject, type Component, type Ref } from 'vue';
 import { usePortfolioStore } from '@/stores/portfolio';
 import { getAllTemplates } from '@/data/templates';
 import BaseButton from '@/components/ui/BaseButton.vue';
@@ -18,6 +18,9 @@ const STEP_VARIANTS = ['primary', 'secondary', 'tertiary', 'default', 'primary']
 const STEP_BG_CLASSES = ['bg-primary-container', 'bg-secondary-container', 'bg-tertiary-container', 'bg-surface', 'bg-primary-container'] as const;
 
 const store = usePortfolioStore();
+// Offset sticky sidebar ngikutin navbar (muncul = top-28, ngilang = top-6)
+const showHeader = inject<Ref<boolean>>('showHeader', ref(true));
+const asideTopClass = computed(() => (showHeader.value ? 'lg:top-28' : 'lg:top-6'));
 const currentStep = ref(1);
 const isGenerating = ref(false);
 const showTemplateSelect = ref(false);
@@ -280,7 +283,7 @@ const templateOptions = computed(() => {
   </div>
 
   <!-- ========== RIGHT COLUMN: Side Panel ========== -->
-  <aside class="space-y-6 lg:sticky lg:top-28">
+  <aside class="space-y-6 lg:sticky transition-[top] duration-300" :class="asideTopClass">
 
     <!-- Step Indicator (compact) -->
     <StepIndicator
@@ -305,7 +308,7 @@ const templateOptions = computed(() => {
             ]"
           >
             <div class="w-8 h-8 flex items-center justify-center neo-border text-label-md font-black shrink-0"
-              :class="step < currentStep ? 'bg-on-surface text-surface' : 'bg-surface'">
+              :class="step < currentStep ? 'bg-on-surface text-surface' : 'bg-surface text-on-surface'">
               <span v-if="step < currentStep" class="material-symbols-outlined text-sm">check</span>
               <span v-else>{{ step }}</span>
             </div>
