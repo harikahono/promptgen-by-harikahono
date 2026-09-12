@@ -23,8 +23,9 @@ const validateField = (field: string, value: any) => {
       fieldSchema.parse(value);
       errors.value[field] = '';
     }
-  } catch (error: any) {
-    errors.value[field] = error.errors[0]?.message || 'Input tidak valid';
+  } catch (error) {
+    const issues = (error as { issues?: { message: string }[] }).issues;
+    errors.value[field] = issues?.[0]?.message || 'Input tidak valid';
   }
 };
 
