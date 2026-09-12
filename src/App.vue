@@ -6,6 +6,7 @@ import PromptOutput from './components/PromptOutput.vue';
 import DecoShape from './components/ui/DecoShape.vue';
 import ThemeToggle from './components/ui/ThemeToggle.vue';
 import BaseModal from './components/ui/BaseModal.vue';
+import TechBadge from './components/ui/TechBadge.vue';
 import type { GeneratorOutput } from './types/portfolio';
 
 const showOutput = ref(false);
@@ -184,10 +185,16 @@ provide('showHeader', showHeader);
         </div>
 
         <!-- Bottom: Copyright -->
-        <div class="text-center mt-6 pt-6 border-t-2 border-on-surface">
+        <div class="mt-6 pt-6 border-t-2 border-on-surface flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
           <p class="text-label-sm text-on-surface-variant">
-            © 2026 Harikahono • Built with Vue 3 + Tailwind v4
+            © 2026 Harikahono • Built with
           </p>
+          <div class="flex flex-wrap items-center justify-center gap-2">
+            <TechBadge tech="vue" />
+            <TechBadge tech="tailwind" />
+            <TechBadge tech="vite" />
+            <TechBadge tech="pinia" />
+          </div>
         </div>
       </div>
     </footer>

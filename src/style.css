@@ -147,6 +147,10 @@
 
 @layer utilities {
   /* ===== MATERIAL SYMBOLS ICONS ===== */
+  /* Ikon disembunyikan sampai font siap (class dari main.ts), biar nggak FOUT jadi teks aneh */
+  html:not(.fonts-ready) .material-symbols-outlined {
+    visibility: hidden;
+  }
   .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';
     font-weight: normal;
